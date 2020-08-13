@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<input type="file" multiple>
+<label>Title</label>
+<input type="text" id="title" class="form-control">
+<label>Description</label>
+<textarea id="description" class="form-control"></textarea>
+<button type="button" id="saveBtn" class="btn btn-primary mt-4">Save</button>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var files = []
+        FilePond.registerPlugin(FilePondPluginFileValidateSize);
+        FilePond.registerPlugin(FilePondPluginFileValidateType);
+        FilePond.setOptions({
+            allowMultiple:true,
+            maxFiles:4,
+            maxFileSize: '3MB'
+        })
+        const inputElement = document.querySelector('input[type="file"]');
+        const pond = FilePond.create( inputElement, {
+            acceptedFileTypes:['image/png', 'image/jpeg'],
+            onaddfile: (err, fileItem) => {
+                if (!err) {
+                files.push(fileItem.file)
+                }
+                console.log(files)
+            },
+            onremovefile: (err, fileItem) => {
+                const index = files.indexOf(fileItem.file)
+                if (index > -1) {
+                    files.splice(index, 1)
+                }
+                console.log(files)
+            }
+        } );
+
+        var formData = new FormData();
+        $(document).on('click', '#saveBtn', function(e) {
+            formData.append('length', files.length)
+            formData.append('title', $('#title').val())
+            formData.append('description', $('#description').val())
+            for (var i = 0; i < files.length; i++) {
+                formData.append('images' + i, files[i])
+            }
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}')
+
+            $.ajax({
+                type: 'POST',
+                url: '{% url "create-post" %}',
+                data: formData,
+                cache: false,
+                processData: false,
+                contentType: false,
+                enctype: 'multipart/form-data',
+                success: function (){
+                    alert('The post has been created!')
+                },
+                error: function(xhr, errmsg, err) {
+                    console.log(xhr.status + ":" + xhr.responseText)
+                }
+            })
+        })
+    })
+</script>
+{% endblock %}
